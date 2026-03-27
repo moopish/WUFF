@@ -96,12 +96,11 @@ namespace WUFF.Image.Bitmap
             offset += (uint)infoHeader.Type;
 
             Palette palette = Palette.Parse(bytes, infoHeader, offset);
-            offset += (uint)(palette.ColourCount * (Palette.HasAlpha(infoHeader.Type) ? 4 : 3));
+            offset = fileHeader.Offset;
 
-            if (!Enum.IsDefined(infoHeader.CompressionUsed))
-            {
-                throw new FileParseException("Invalid compression type found: " + infoHeader.CompressionUsed);
-            }
+            if (offset >= bytes.Length) throw new FileParseException("Offset in file to pixel array is greater than file length.");
+
+            if (!Enum.IsDefined(infoHeader.CompressionUsed)) throw new FileParseException("Invalid compression type found: " + infoHeader.CompressionUsed);
 
             LittleEndianReader reader = new(bytes, offset);
 
