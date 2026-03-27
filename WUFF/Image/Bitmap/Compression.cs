@@ -10,14 +10,14 @@ namespace WUFF.Image.Bitmap
         /// If the first byte on a read is this value (0) it signals 
         /// that an escape code is in the second byte.
         /// </summary>
-        internal const int EscapeSignal = 0x00;
+        private const int EscapeSignal = 0x00;
 
         /// <summary>
         /// Values that come after a <see cref="EscapeSignal"/>. If the 
         /// observed value is not one of these, then it uses absolute 
         /// mode, where the indicies are listed out explicitly.
         /// </summary>
-        internal enum EscapeCode
+        private enum EscapeCode
         {
             /// <summary>
             /// Signals to end the line and start the next.
@@ -86,21 +86,21 @@ namespace WUFF.Image.Bitmap
                 byte count = reader.Byte();
                 byte index = reader.Byte();
 
-                if (count == Compression.EscapeSignal)
+                if (count == EscapeSignal)
                 {
                     // Escape code
-                    switch ((Compression.EscapeCode)index)
+                    switch ((EscapeCode)index)
                     {
-                        case Compression.EscapeCode.EndLine:
+                        case EscapeCode.EndLine:
                             --y;
                             x = 0;
                             break;
 
-                        case Compression.EscapeCode.EndDecoding:
+                        case EscapeCode.EndDecoding:
                             running = false;
                             break;
 
-                        case Compression.EscapeCode.Delta:
+                        case EscapeCode.Delta:
                             x += reader.Byte();
                             y -= reader.Byte();
                             break;
@@ -140,7 +140,24 @@ namespace WUFF.Image.Bitmap
             return pixels;
         }
 
+        /// <summary>
+        /// Decode RLE-4 pixel data.
+        /// </summary>
+        /// <param name="reader">The reader to get the data from.</param>
+        /// <param name="info">The info header. Details the bitmap.</param>
+        /// <param name="palette">The palette of the bitmap.</param>
+        /// <returns>The pixels of the decoded image.</returns>
+        /// <exception cref="FileParseException">Thrown when issues arrise with trying to write outside of bitmap bounds or a negative height is provided.</exception>
         internal static Color[] RLE4Decode(LittleEndianReader reader, InfoHeader info, Palette palette) => RLEDecode(reader, info, palette, new RLE4Parser());
+
+        /// <summary>
+        /// Decode RLE-8 pixel data.
+        /// </summary>
+        /// <param name="reader">The reader to get the data from.</param>
+        /// <param name="info">The info header. Details the bitmap.</param>
+        /// <param name="palette">The palette of the bitmap.</param>
+        /// <returns>The pixels of the decoded image.</returns>
+        /// <exception cref="FileParseException">Thrown when issues arrise with trying to write outside of bitmap bounds or a negative height is provided.</exception>
         internal static Color[] RLE8Decode(LittleEndianReader reader, InfoHeader info, Palette palette) => RLEDecode(reader, info, palette, new RLE8Parser());
 
         /// <summary>
