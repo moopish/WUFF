@@ -57,7 +57,40 @@ namespace WUFF.Image.Bitmap
             /// <summary>
             /// Run-length encoding for 4-bit, 16 colour BMPs.
             /// </summary>
-            RLE4 = 2
+            RLE4 = 2,
+
+            /// <summary>
+            /// Encoding of colour channels based on bit masks.
+            /// </summary>
+            BitMasks = 3
+        }
+
+        /// <summary>
+        /// Parse the pixel data based on bit masks.
+        /// </summary>
+        /// <param name="reader">The reader to read the bytes from.</param>
+        /// <param name="info">The info header to get the masks and other bitmap details from.</param>
+        /// <returns>The parsed pixels.</returns>
+        internal static Color[] ParseBitMask(LittleEndianReader reader, InfoHeader info)
+        {
+            if (info.Depth != ColourDepth.TrueColourWithAlpha && info.Depth != ColourDepth.HighColour)
+                throw new FileParseException("Attempting to parse pixels with bit masks when unsupported for bitmap's colour depth.");
+
+            Color[] pixels = new Color[info.Size];
+            BitMaskParser parser = new(info.Masks);
+
+            foreach (int y in info.YRange)
+            {
+                for (int x = 0; x < info.Width; ++x)
+                {
+                    uint value = info.Depth == ColourDepth.HighColour ? reader.UShort() : reader.UInt();
+                    pixels[y * info.Width + x] = parser.Parse(value);
+                }
+
+                if (info.Depth == ColourDepth.HighColour && (info.Width & 1) == 1) reader.UShort();
+            }
+
+            return pixels;
         }
 
         /// <summary>
@@ -72,7 +105,7 @@ namespace WUFF.Image.Bitmap
         /// <exception cref="FileParseException">Thrown when issues arrise with trying to write outside of bitmap bounds or a negative height is provided.</exception>
         private static Color[] RLEDecode(LittleEndianReader reader, InfoHeader info, Palette palette, RLEParser parser)
         {
-            FileParseException.ThrowIfNegative(info.Height, "RLE compression does not allow negative height.");
+            if (info.IsMirroredVertically) throw new FileParseException("RLE compression does not allow top-down (negative height).");
 
             Color[] pixels = new Color[info.Size];
 
@@ -159,6 +192,210 @@ namespace WUFF.Image.Bitmap
         /// <returns>The pixels of the decoded image.</returns>
         /// <exception cref="FileParseException">Thrown when issues arrise with trying to write outside of bitmap bounds or a negative height is provided.</exception>
         internal static Color[] RLE8Decode(LittleEndianReader reader, InfoHeader info, Palette palette) => RLEDecode(reader, info, palette, new RLE8Parser());
+
+        /// <summary>
+        /// Parser to retrieve the ARGB values using bit masks.
+        /// </summary>
+        /// <param name="masks">The masks for the the colour and alpha channels.</param>
+        private class BitMaskParser(BitMaskSet masks)
+        {
+            /// <summary>
+            /// The bit masks for determining the colour and alpha channel values.
+            /// </summary>
+            private readonly BitMaskSet _masks = masks;
+
+            /// <summary>
+            /// Pull the colour and alpha channel data from the given 
+            /// value using the bit masks.
+            /// </summary>
+            /// <param name="value">The value to get the colour from.</param>
+            /// <returns>The colour from the value.</returns>
+            internal Color Parse(uint value)
+            {
+                uint alpha = 0;
+                uint red = 0;
+                uint green = 0;
+                uint blue = 0;
+
+                for (int bit = (int)_masks.Depth - 1; bit >= 0; --bit)
+                {
+                    uint bValue = (value >> bit) & 1;
+
+                    switch (_masks.GetChannel(bit))
+                    {
+                        case ColourChannel.Alpha:
+                            alpha = (alpha << 1) | bValue;
+                            break;
+
+                        case ColourChannel.Red:
+                            red = (red << 1) | bValue;
+                            break;
+
+                        case ColourChannel.Green:
+                            green = (green << 1) | bValue;
+                            break;
+
+                        case ColourChannel.Blue:
+                            blue = (blue << 1) | bValue;
+                            break;
+                    }
+                }
+
+                alpha = ClampChannel(_masks.MaxAlpha, alpha);
+                red = ClampChannel(_masks.MaxRed, red);
+                green = ClampChannel(_masks.MaxGreen, green);
+                blue = ClampChannel(_masks.MaxBlue, blue);
+
+                if (_masks.MaxAlpha == 0) alpha = 255; // Assume no bitmask means no alpha.
+                return Color.FromArgb((int)alpha, (int)red, (int)green, (int)blue);
+            }
+
+            /// <summary>
+            /// Clamp the given channel value to be between 0 and 255 (inclusive).
+            /// </summary>
+            /// <param name="max">The max value of the channel given the bit mask.</param>
+            /// <param name="value">The value found using the bit mask.</param>
+            /// <returns>The channel colour projected onto the 0 to 255 range.</returns>
+            private static uint ClampChannel(uint max, uint value)
+            {
+                if (max == 0xFF || max == 0) return value;
+                if (value == max) return 0xFF;
+                return value * 0xFF / max;
+            }
+        }
+
+        /// <summary>
+        /// Represents the collection of bit masks to retrieve a colour.
+        /// </summary>
+        public class BitMaskSet
+        {
+            /// <summary>
+            /// The default bit masks for a 16-bit bitmap. 5 bits 
+            /// for each colour channel and a single unused bit.
+            /// </summary>
+            public readonly static BitMaskSet Default16Bit = new(0, 0b0111_1100_0000_0000, 0b0011_1110_0000, 0b0001_1111, ColourDepth.HighColour);
+            
+            /// <summary>
+            /// The default bit masks for a 32-bit bitmap. 8 bits 
+            /// for each colour channel and 8 unused bits.
+            /// </summary>
+            public readonly static BitMaskSet Default32Bit = new(0, 0x00_FF_00_00, 0x00_00_FF_00, 0x00_00_00_FF, ColourDepth.TrueColourWithAlpha);
+
+
+            /// <summary>
+            /// The colour depth of the bitmap image to parse.
+            /// </summary>
+            public readonly ColourDepth Depth;
+            
+
+            /// <summary>
+            /// The alpha channel mask.
+            /// </summary>
+            public readonly uint Alpha;
+
+            /// <summary>
+            /// The red channel mask.
+            /// </summary>
+            public readonly uint Red;
+
+            /// <summary>
+            /// The green channel mask.
+            /// </summary>
+            public readonly uint Green;
+
+            /// <summary>
+            /// The blue channel mask.
+            /// </summary>
+            public readonly uint Blue;
+
+
+            /// <summary>
+            /// The max value possible for the alpha channel.
+            /// </summary>
+            public readonly uint MaxAlpha;
+
+            /// <summary>
+            /// The max value possible for the red channel.
+            /// </summary>
+            public readonly uint MaxRed;
+
+            /// <summary>
+            /// The max value possible for the green channel.
+            /// </summary>
+            public readonly uint MaxGreen; 
+
+            /// <summary>
+            /// The max value possible for the blue channel.
+            /// </summary>
+            public readonly uint MaxBlue;
+
+            /// <summary>
+            /// Initialize a <see cref="BitMaskSet"/>.
+            /// </summary>
+            /// <param name="alpha">The alpha mask.</param>
+            /// <param name="red">The red mask.</param>
+            /// <param name="green">The green mask.</param>
+            /// <param name="blue">The blue mask.</param>
+            /// <param name="depth">The colour depth.</param>
+            /// <exception cref="FileParseException">Thrown should the bit masks overlap.</exception>
+            public BitMaskSet(uint alpha, uint red, uint green, uint blue, ColourDepth depth)
+            {
+                Depth = depth;
+                Alpha = alpha;
+                Red = red;
+                Green = green;
+                Blue = blue;
+
+                MaxAlpha = 0;
+                MaxRed = 0;
+                MaxGreen = 0;
+                MaxBlue = 0;
+
+                for (int i = 0; i < (int)depth; ++i)
+                {
+                    int count = 0;
+
+                    if (((Red >> i) & 0x01) == 1) {
+                        MaxRed = (MaxRed << 1) + 1;
+                        ++count;
+                    }
+                    
+                    if (((Green >> i) & 0x01) == 1)
+                    {
+                        MaxGreen = (MaxGreen << 1) + 1;
+                        ++count; 
+                    }
+
+                    if (((Blue >> i) & 0x01) == 1)
+                    {
+                        MaxBlue = (MaxBlue << 1) + 1;
+                        ++count;
+                    }
+
+                    if (((Alpha >> i) & 0x01) == 1)
+                    {
+                        MaxAlpha = (MaxAlpha << 1) + 1;
+                        ++count;
+                    }
+
+                    if (count > 1) throw new FileParseException("Bit masks overlap");
+                }
+            }
+
+            /// <summary>
+            /// Determine which channel a bit belongs to based on the bit masks.
+            /// </summary>
+            /// <param name="bit">The bit to check.</param>
+            /// <returns>The channel that claims the given bit.</returns>
+            public ColourChannel GetChannel(int bit)
+            {
+                if (((Alpha >> bit) & 1) == 1) return ColourChannel.Alpha;
+                if (((Red >> bit) & 1) == 1) return ColourChannel.Red;
+                if (((Green >> bit) & 1) == 1) return ColourChannel.Green;
+                if (((Blue >> bit) & 1) == 1) return ColourChannel.Blue;
+                return ColourChannel.None;
+            }
+        }
 
         /// <summary>
         /// Run-length encoding parser.

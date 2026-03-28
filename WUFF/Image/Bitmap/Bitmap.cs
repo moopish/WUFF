@@ -104,15 +104,19 @@ namespace WUFF.Image.Bitmap
 
             LittleEndianReader reader = new(bytes, offset);
 
+            // The size of the pixel data being stated as zero is valid.
+            if (infoHeader.SizeInBytes != 0)
+                FileParseException.ThrowIfNotEqual((uint)reader.Remaining, infoHeader.SizeInBytes, "Pixel data length mismatch with stated size in header.");
+
             Color[] pixels = infoHeader.Depth switch
             {
                 ColourDepth.Monochromatic => ParseWithPalette(reader, infoHeader, palette, new MonochromaticParser()),
                 ColourDepth.CGA => ParseWithPalette(reader, infoHeader, palette, new CGAParser()),
                 ColourDepth.EGA => infoHeader.CompressionUsed == Compression.Type.RLE4 ? Compression.RLE4Decode(reader, infoHeader, palette) : ParseWithPalette(reader, infoHeader, palette, new EGAParser()),
                 ColourDepth.VGA => infoHeader.CompressionUsed == Compression.Type.RLE8 ? Compression.RLE8Decode(reader, infoHeader, palette) : ParseWithPalette(reader, infoHeader, palette),
-                ColourDepth.HighColour => throw new NotImplementedException("TODO"),
+                ColourDepth.HighColour => Compression.ParseBitMask(reader, infoHeader),
                 ColourDepth.TrueColour => ParseTrueColour(reader, infoHeader),
-                ColourDepth.TrueColourWithAlpha => throw new NotImplementedException("TODO"),
+                ColourDepth.TrueColourWithAlpha => Compression.ParseBitMask(reader, infoHeader),
                 _ => throw new FileParseException("Invalid colour depth: " + infoHeader.Depth),
             };
 
@@ -130,7 +134,7 @@ namespace WUFF.Image.Bitmap
         {
             Color[] pixels = new Color[info.Size];
 
-            foreach (int y in YRangeOf(info))
+            foreach (int y in info.YRange)
             {
                 int offset32 = 0;
 
@@ -163,7 +167,7 @@ namespace WUFF.Image.Bitmap
         {
             Color[] pixels = new Color[info.Size];
 
-            foreach (int y in YRangeOf(info))
+            foreach (int y in info.YRange)
             {
                 int offset32 = 0;
                 bool readByte = true;
@@ -203,21 +207,19 @@ namespace WUFF.Image.Bitmap
         /// </summary>
         /// <param name="reader">The reader to parse the bytes from.</param>
         /// <param name="info">The header info.</param>
-        /// <param name="includeAlpha">Whether to parse an alpha byte or not (making it 32-bit).</param>
         /// <returns>The pixels of the image.</returns>
-        private static Color[] ParseTrueColour(LittleEndianReader reader, InfoHeader info, bool includeAlpha = false)
+        private static Color[] ParseTrueColour(LittleEndianReader reader, InfoHeader info)
         {
             Color[] pixels = new Color[info.Size];
 
-            foreach (int y in YRangeOf(info))
+            foreach (int y in info.YRange)
             {
                 for (int x = 0; x < info.Width; ++x)
                 {
                     int blue = reader.Byte();
                     int green = reader.Byte();
                     int red = reader.Byte();
-                    int alpha = includeAlpha ? reader.Byte() : 255;
-                    pixels[y * info.Width + x] = Color.FromArgb(alpha, red, green, blue);
+                    pixels[y * info.Width + x] = Color.FromArgb(255, red, green, blue);
                 }
 
                 for (int i = 0; i < info.Width % 4; ++i) reader.Byte();
@@ -260,13 +262,6 @@ namespace WUFF.Image.Bitmap
                 return Result<Bitmap>.Fail(e.Message, -1);
             }
         }
-
-        /// <summary>
-        /// Gets the range of y values. Can be 0 until the height or the height - 1 down to 0.
-        /// </summary>
-        /// <param name="info">The info of the bitmap to retreived required information. </param>
-        /// <returns>The y range.</returns>
-        private static IEnumerable<int> YRangeOf(InfoHeader info) => info.IsMirroredVertically ? Enumerable.Range(0, info.Height) : Enumerable.Range(0, info.Height).Reverse();
 
         //
         // HELPER CLASSES

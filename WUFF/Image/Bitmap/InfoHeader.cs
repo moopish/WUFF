@@ -87,11 +87,25 @@ namespace WUFF.Image.Bitmap
         /// </summary>
         private uint _importantColours;
 
-        // TODO comment and implement
-        private uint _red_mask;
-        private uint _green_mask;
-        private uint _blue_mask;
-        private uint _alpha_mask;
+        /// <summary>
+        /// The bit mask used to determine which bits are used determining the red channel value.
+        /// </summary>
+        private uint _red_mask = 0;
+
+        /// <summary>
+        /// The bit mask used to determine which bits are used determining the green channel value.
+        /// </summary>
+        private uint _green_mask = 0;
+
+        /// <summary>
+        /// The bit mask used to determine which bits are used determining the blue channel value.
+        /// </summary>
+        private uint _blue_mask = 0;
+
+        /// <summary>
+        /// The bit mask used to determine which bits are used determining the alpha channel value.
+        /// </summary>
+        private uint _alpha_mask = 0;
 
         //
         // PROPERTIES
@@ -124,9 +138,30 @@ namespace WUFF.Image.Bitmap
         internal bool IsMirroredVertically => _height < 0;
 
         /// <summary>
+        /// The bit masks for all the channels. Will only contain non-zero values if 16 or 32 bit bitmaps.
+        /// </summary>
+        internal Compression.BitMaskSet Masks
+        {
+            get
+            {
+                if (CompressionUsed != Compression.Type.BitMasks)
+                {
+                    if (Depth == ColourDepth.HighColour) return Compression.BitMaskSet.Default16Bit;
+                    if (Depth == ColourDepth.TrueColourWithAlpha) return Compression.BitMaskSet.Default32Bit;
+                }
+                return new(_alpha_mask, _red_mask, _green_mask, _blue_mask, _bitsPerPixel);
+            }
+        }
+
+        /// <summary>
         /// The size of the image in pixels.
         /// </summary>
         public int Size => Width * Height;
+
+        /// <summary>
+        /// The number of bytes in the image based on what is specified in the info header.
+        /// </summary>
+        public uint SizeInBytes => _size;
 
         /// <summary>
         /// The header type, which is determined by the header size in bytes.
@@ -137,6 +172,13 @@ namespace WUFF.Image.Bitmap
         /// The width of the bitmap in pixels.
         /// </summary>
         public int Width { get => _width; }
+
+        /// <summary>
+        /// Gets the range of y values. Can be 0 until the height or the height - 1 down to 0.
+        /// </summary>
+        /// <param name="info">The info of the bitmap to retreived required information. </param>
+        /// <returns>The y range.</returns>
+        internal IEnumerable<int> YRange => IsMirroredVertically ? Enumerable.Range(0, Height) : Enumerable.Range(0, Height).Reverse();
 
         /// <summary>
         /// Parse the provided bytes, starting at the given offset, as if it were a bitmap infomation header.
@@ -190,12 +232,23 @@ namespace WUFF.Image.Bitmap
             // Width cannot be negative, though height can be.
             FileParseException.ThrowIfNegative(info._width, "Width cannot be negative.");
 
+            // Planes must be equal to one.
+            FileParseException.ThrowIfNotEqual(info._planes, 1, "Plane count must be 1.");
+
             // RLE8 and RLE4 can only be used with 8-bit and 4-bit bitmaps respectively.
-            if (info.CompressionUsed == Compression.Type.RLE8) 
+            if (info.CompressionUsed == Compression.Type.RLE8)
                 FileParseException.ThrowIfNotEqual(info.Depth, ColourDepth.VGA, "Detected RLE8 when colour depth is not 8-bits.");
 
-            if (info.CompressionUsed == Compression.Type.RLE4) 
+            if (info.CompressionUsed == Compression.Type.RLE4)
                 FileParseException.ThrowIfNotEqual(info.Depth, ColourDepth.EGA, "Detected RLE4 when colour depth is not 4-bits.");
+
+            if (info.CompressionUsed == Compression.Type.BitMasks)
+            {
+                if (info.Depth != ColourDepth.TrueColourWithAlpha && info.Depth != ColourDepth.HighColour)
+                    throw new FileParseException("Bit masks are only used with 16 or 32-bit bitmaps.");
+
+                ParseMasks(reader, info);
+            }
 
             return info;
         }
@@ -212,6 +265,24 @@ namespace WUFF.Image.Bitmap
             info._height = reader.Short();
             info._planes = reader.UShort();
             info._bitsPerPixel = (ColourDepth)reader.UShort();
+        }
+
+        /// <summary>
+        /// Parse the bit masks directly if the header did not include it in the size.
+        /// </summary>
+        /// <param name="reader">The reader to read the bytes.</param>
+        /// <param name="info">The header to read the data into.</param>
+        private static void ParseMasks(LittleEndianReader reader, InfoHeader info)
+        {
+            // TODO check to not perform reads a second time
+            if (info.Type == HeaderType.WindowsHeaderV1)
+            {
+                reader.Position = 40;
+                info._red_mask = reader.UInt();
+                info._green_mask = reader.UInt();
+                info._blue_mask = reader.UInt();
+                info._alpha_mask = reader.UInt();
+            }
         }
 
         /// <summary>
@@ -267,8 +338,8 @@ namespace WUFF.Image.Bitmap
         /// <param name="info">The info header to fill with the parsed information.</param>
         private static void ParseWindowsHeaderV4(LittleEndianReader reader, InfoHeader info)
         {
-            ParseWindowsHeaderV3(reader, info);
-            reader.Position = 56;
+            //ParseWindowsHeaderV3(reader, info);
+            //reader.Position = 56;
             //TODO
             throw new NotImplementedException("Info Header v4 is not yet supported.");
         }
@@ -280,10 +351,10 @@ namespace WUFF.Image.Bitmap
         /// <param name="info">The info header to fill with the parsed information.</param>
         private static void ParseWindowsHeaderV5(LittleEndianReader reader, InfoHeader info)
         {
-            ParseWindowsHeaderV4(reader, info);
-            reader.Position = 108;
-            //TODO
             throw new NotImplementedException("Info Header v5 is not yet supported.");
+            //ParseWindowsHeaderV4(reader, info);
+            //reader.Position = 108;
+            //TODO
         }
 
         /// <summary>
