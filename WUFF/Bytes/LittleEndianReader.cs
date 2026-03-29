@@ -5,12 +5,17 @@ namespace WUFF.Bytes
     /// <summary>
     /// Reader that reads in values from a byte array using little endian.
     /// </summary>
-    internal ref struct LittleEndianReader
+    internal class LittleEndianReader
     {
         /// <summary>
         /// Bytes to read from.
         /// </summary>
-        private readonly ReadOnlySpan<byte> _bytes;
+        private readonly byte[] _bytes;
+
+        /// <summary>
+        /// The offset from the start of the bytes to consider index 0.
+        /// </summary>
+        private int _offset;
 
         /// <summary>
         /// Current position in <see cref="_bytes"/>.
@@ -20,18 +25,18 @@ namespace WUFF.Bytes
         /// <summary>
         /// Whether the reader is at the end of the byte array or not.
         /// </summary>
-        public readonly bool HasMore => _position < _bytes.Length;
+        public bool HasMore => _position < _bytes.Length - _offset;
 
         /// <summary>
         /// The current position of the reader in the byte array.
         /// </summary>
         public int Position
         {
-            readonly get => _position;
+            get => _position;
             set
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _bytes.Length);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _bytes.Length - _offset);
                 _position = value;
             }
         }
@@ -39,19 +44,20 @@ namespace WUFF.Bytes
         /// <summary>
         /// Get how many bytes are left in the reader.
         /// </summary>
-        public readonly int Remaining => _bytes.Length - _position;
+        public int Remaining => Math.Max(_bytes.Length - _offset - _position, 0);
 
         /// <summary>
         /// Create a reader over the given bytes.
         /// </summary>
         /// <param name="bytes">The bytes the reader will read.</param>
         /// <param name="offset">The starting point in the given bytes for the reader to consider index 0.</param>
-        public LittleEndianReader(Span<byte> bytes, uint offset = 0)
+        public LittleEndianReader(byte[] bytes, uint offset = 0)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative((int)offset);
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(offset, (uint)bytes.Length);
 
-            _bytes = offset == 0 ? bytes : bytes[(int)offset..];
+            _offset = (int)offset;
+            _bytes = bytes;
             _position = 0;
         }
 
@@ -62,7 +68,7 @@ namespace WUFF.Bytes
         public byte Byte()
         {
             ValidateOperation(1);
-            byte value = _bytes[_position];
+            byte value = _bytes[_position + _offset];
             _position += 1;
             return value;
         }
@@ -74,7 +80,7 @@ namespace WUFF.Bytes
         public int Int()
         {
             ValidateOperation(4);
-            int value = ReadInt32LittleEndian(_bytes[_position..]);
+            int value = ReadInt32LittleEndian(_bytes.AsSpan()[(_position + _offset)..]);
             _position += 4;
             return value;
         }
@@ -86,7 +92,7 @@ namespace WUFF.Bytes
         public long Long()
         {
             ValidateOperation(8);
-            long value = ReadInt64LittleEndian(_bytes[_position..]);
+            long value = ReadInt64LittleEndian(_bytes.AsSpan()[(_position + _offset)..]);
             _position += 8;
             return value;
         }
@@ -98,7 +104,7 @@ namespace WUFF.Bytes
         public sbyte SByte()
         {
             ValidateOperation(1);
-            sbyte value = (sbyte)_bytes[_position];
+            sbyte value = (sbyte)_bytes[_position + _offset];
             _position += 1;
             return value;
         }
@@ -110,7 +116,7 @@ namespace WUFF.Bytes
         public short Short()
         {
             ValidateOperation(2);
-            short value = ReadInt16LittleEndian(_bytes[_position..]);
+            short value = ReadInt16LittleEndian(_bytes.AsSpan()[(_position + _offset)..]);
             _position += 2;
             return value;
         }
@@ -122,7 +128,7 @@ namespace WUFF.Bytes
         public uint UInt()
         {
             ValidateOperation(4);
-            uint value = ReadUInt32LittleEndian(_bytes[_position..]);
+            uint value = ReadUInt32LittleEndian(_bytes.AsSpan()[(_position + _offset)..]);
             _position += 4;
             return value;
         }
@@ -134,7 +140,7 @@ namespace WUFF.Bytes
         public ulong ULong()
         {
             ValidateOperation(8);
-            ulong value = ReadUInt64LittleEndian(_bytes[_position..]);
+            ulong value = ReadUInt64LittleEndian(_bytes.AsSpan()[(_position + _offset)..]);
             _position += 8;
             return value;
         }
@@ -146,7 +152,7 @@ namespace WUFF.Bytes
         public ushort UShort()
         {
             ValidateOperation(2);
-            ushort value = ReadUInt16LittleEndian(_bytes[_position..]);
+            ushort value = ReadUInt16LittleEndian(_bytes.AsSpan()[(_position + _offset)..]);
             _position += 2;
             return value;
         }
@@ -161,13 +167,13 @@ namespace WUFF.Bytes
         /// <exception cref="InvalidOperationException">
         /// Should there not be enough bytes remaining in the array to perform the operation.
         /// </exception>
-        private readonly void ValidateOperation(uint bytesRequired)
+        private void ValidateOperation(uint bytesRequired)
         {
             if (_position + bytesRequired > _bytes.Length)
             {
                 throw new InvalidOperationException(
                     "Not enought bytes to perform read: pos = " + _position
-                    + ", length = " + _bytes.Length
+                    + ", length = " + (_position + _offset)
                     + ", bytes = " + bytesRequired
                 );
             }

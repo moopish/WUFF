@@ -74,16 +74,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="offset">The offset to the starting position of the data to parse.</param>
         /// <returns>A bitmap file header from the provided data.</returns>
         /// <exception cref="FileParseException">If the data does not have enough bytes to parse.</exception>
-        public static FileHeader Parse(byte[] data, uint offset = 0) => Parse(data.AsSpan(), offset);
-
-        /// <summary>
-        /// Parse the given data into a <see cref="FileHeader"/>.
-        /// </summary>
-        /// <param name="data">The byte data to parse.</param>
-        /// <param name="offset">The offset to the starting position of the data to parse.</param>
-        /// <returns>A bitmap file header from the provided data.</returns>
-        /// <exception cref="FileParseException">If the data does not have enough bytes to parse.</exception>
-        public static FileHeader Parse(Span<byte> bytes, uint offset = 0)
+        public static FileHeader Parse(byte[] bytes, uint offset = 0)
         {
             if (offset + BitmapFileHeaderSize > bytes.Length)
             {

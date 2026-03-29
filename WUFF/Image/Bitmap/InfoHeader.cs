@@ -187,7 +187,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="offset">The starting point to parse at.</param>
         /// <returns>A <see cref="InfoHeader"/> that contains the info header details.</returns>
         /// <exception cref="FileParseException">Should any issues related to parsing the file occur.</exception>
-        public static InfoHeader Parse(Span<byte> bytes, uint offset = 0)
+        public static InfoHeader Parse(byte[] bytes, uint offset = 0)
         {
             LittleEndianReader reader = new(bytes, offset);
             InfoHeader info = new((HeaderType)reader.UInt());

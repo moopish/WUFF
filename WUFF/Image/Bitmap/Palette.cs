@@ -65,7 +65,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="info">The details of the bitmap.</param>
         /// <param name="offset">The starting index in bytes of the colour table.</param>
         /// <returns>A palette containing the colours of the colour table.</returns>
-        public static Palette Parse(Span<byte> bytes, InfoHeader info, uint offset = 0)
+        public static Palette Parse(byte[] bytes, InfoHeader info, uint offset = 0)
         {
             uint colourCount = info.ColoursInPalette;
 
