@@ -43,7 +43,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="width">The horizontal pixel count.</param>
         /// <param name="height">The vertical pixel count.</param>
         /// <param name="pixels">The pixels, i.e. the colours of the image.</param>
-        private Bitmap(int width, int height, Color[] pixels)
+        internal Bitmap(int width, int height, Color[] pixels)
         {
             Width = width;
             Height = height;
@@ -122,11 +122,19 @@ namespace WUFF.Image.Bitmap
         /// <param name="offset">The offset to where the colour data is.</param>
         /// <returns>The pixel data of the bitmap.</returns>
         /// <exception cref="FileParseException">Thrown should an issue arise when parsing the colour data.</exception>
-        internal static Color[] ParseColourData(byte[] bytes, InfoHeader info, Palette palette, uint offset = 0)
+        internal static Color[] ParseColourData(byte[] bytes, InfoHeader info, Palette palette, uint offset = 0) => ParseColourData(new(bytes, offset), info, palette);
+
+        /// <summary>
+        /// Parse the colour data for a bitmap.
+        /// </summary>
+        /// <param name="reader">The reader to get the bitmap data.</param>
+        /// <param name="info">The bitmap info header.</param>
+        /// <param name="palette">The bitmap colour header.</param>
+        /// <returns>The pixel data of the bitmap.</returns>
+        /// <exception cref="FileParseException">Thrown should an issue arise when parsing the colour data.</exception>
+        internal static Color[] ParseColourData(LittleEndianReader reader, InfoHeader info, Palette palette)
         {
             if (!Enum.IsDefined(info.CompressionUsed)) throw new FileParseException("Invalid compression type found: " + info.CompressionUsed);
-
-            LittleEndianReader reader = new(bytes, offset);
 
             // The size of the pixel data being stated as zero is valid.
             if (info.SizeInBytes != 0)

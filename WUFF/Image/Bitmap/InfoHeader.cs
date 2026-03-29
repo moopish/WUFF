@@ -180,6 +180,46 @@ namespace WUFF.Image.Bitmap
         /// <returns>The y range.</returns>
         internal IEnumerable<int> YRange => IsMirroredVertically ? Enumerable.Range(0, Height) : Enumerable.Range(0, Height).Reverse();
 
+        internal InfoHeader IconHalfHeightVariant()
+        {
+            InfoHeader halfHeight = new(_type)
+            {
+                _width = _width,
+                _height = _height / 2,
+                _planes = _planes,
+                _bitsPerPixel = _bitsPerPixel,
+                _compressionType = _compressionType,
+                _size = 0,
+                _horizontalRes = _horizontalRes,
+                _verticalRes = _verticalRes,
+                _coloursUsed = _coloursUsed,
+                _importantColours = _importantColours,
+                _red_mask = _red_mask,
+                _green_mask = _green_mask,
+                _blue_mask = _blue_mask,
+                _alpha_mask = _alpha_mask
+            };
+
+            return halfHeight;
+        }
+
+        internal InfoHeader IconMaskVariant()
+        {
+            InfoHeader mono = new(_type)
+            {
+                _width = _width,
+                _height = _height,
+                _planes = _planes,
+                _bitsPerPixel = ColourDepth.Monochromatic,
+                _compressionType = Compression.Type.None,
+                _size = _size,
+                _coloursUsed = 2,
+                _importantColours = 0
+            };
+
+            return mono;
+        }
+
         /// <summary>
         /// Parse the provided bytes, starting at the given offset, as if it were a bitmap infomation header.
         /// </summary>

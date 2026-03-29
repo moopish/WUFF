@@ -10,6 +10,11 @@ namespace WUFF.Image.Bitmap
     internal class Palette
     {
         /// <summary>
+        /// A black and white palette.
+        /// </summary>
+        public static readonly Palette BlackAndWhitePalette = new([Color.Black, Color.White]);
+
+        /// <summary>
         /// An empty palette. Contains no colours.
         /// </summary>
         public static readonly Palette EmptyPalette = new([]);
