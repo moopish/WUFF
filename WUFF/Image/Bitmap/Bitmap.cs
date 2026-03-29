@@ -108,19 +108,41 @@ namespace WUFF.Image.Bitmap
             if (infoHeader.SizeInBytes != 0)
                 FileParseException.ThrowIfNotEqual((uint)reader.Remaining, infoHeader.SizeInBytes, "Pixel data length mismatch with stated size in header.");
 
-            Color[] pixels = infoHeader.Depth switch
-            {
-                ColourDepth.Monochromatic => ParseWithPalette(reader, infoHeader, palette, new MonochromaticParser()),
-                ColourDepth.CGA => ParseWithPalette(reader, infoHeader, palette, new CGAParser()),
-                ColourDepth.EGA => infoHeader.CompressionUsed == Compression.Type.RLE4 ? Compression.RLE4Decode(reader, infoHeader, palette) : ParseWithPalette(reader, infoHeader, palette, new EGAParser()),
-                ColourDepth.VGA => infoHeader.CompressionUsed == Compression.Type.RLE8 ? Compression.RLE8Decode(reader, infoHeader, palette) : ParseWithPalette(reader, infoHeader, palette),
-                ColourDepth.HighColour => Compression.ParseBitMask(reader, infoHeader),
-                ColourDepth.TrueColour => ParseTrueColour(reader, infoHeader),
-                ColourDepth.TrueColourWithAlpha => Compression.ParseBitMask(reader, infoHeader),
-                _ => throw new FileParseException("Invalid colour depth: " + infoHeader.Depth),
-            };
+            Color[] pixels = ParseColourData(bytes, infoHeader, palette, offset);
 
             return new Bitmap(infoHeader.Width, infoHeader.Height, pixels);
+        }
+
+        /// <summary>
+        /// Parse the colour data for a bitmap.
+        /// </summary>
+        /// <param name="bytes">The bitmap data.</param>
+        /// <param name="info">The bitmap info header.</param>
+        /// <param name="palette">The bitmap colour header.</param>
+        /// <param name="offset">The offset to where the colour data is.</param>
+        /// <returns>The pixel data of the bitmap.</returns>
+        /// <exception cref="FileParseException">Thrown should an issue arise when parsing the colour data.</exception>
+        internal static Color[] ParseColourData(byte[] bytes, InfoHeader info, Palette palette, uint offset = 0)
+        {
+            if (!Enum.IsDefined(info.CompressionUsed)) throw new FileParseException("Invalid compression type found: " + info.CompressionUsed);
+
+            LittleEndianReader reader = new(bytes, offset);
+
+            // The size of the pixel data being stated as zero is valid.
+            if (info.SizeInBytes != 0)
+                FileParseException.ThrowIfNotEqual((uint)reader.Remaining, info.SizeInBytes, "Pixel data length mismatch with stated size in header.");
+
+            return info.Depth switch
+            {
+                ColourDepth.Monochromatic => ParseWithPalette(reader, info, palette, new MonochromaticParser()),
+                ColourDepth.CGA => ParseWithPalette(reader, info, palette, new CGAParser()),
+                ColourDepth.EGA => info.CompressionUsed == Compression.Type.RLE4 ? Compression.RLE4Decode(reader, info, palette) : ParseWithPalette(reader, info, palette, new EGAParser()),
+                ColourDepth.VGA => info.CompressionUsed == Compression.Type.RLE8 ? Compression.RLE8Decode(reader, info, palette) : ParseWithPalette(reader, info, palette),
+                ColourDepth.HighColour => Compression.ParseBitMask(reader, info),
+                ColourDepth.TrueColour => ParseTrueColour(reader, info),
+                ColourDepth.TrueColourWithAlpha => Compression.ParseBitMask(reader, info),
+                _ => throw new FileParseException("Invalid colour depth: " + info.Depth),
+            };
         }
 
         /// <summary>
