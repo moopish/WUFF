@@ -7,23 +7,13 @@ namespace WUFF.Image.Bitmap
     /// <summary>
     /// Represents a bitmap image.
     /// </summary>
-    public class Bitmap
+    public class Bitmap : Image
     {
         /// <summary>
         /// The pixels of the bitmap image. Stored top-down, row-by-row.
         /// The first element would be the top-left pixel.
         /// </summary>
         private readonly Color[] _pixels;
-
-        /// <summary>
-        /// The width of the bitmap image.
-        /// </summary>
-        public int Width { get; private set; }
-
-        /// <summary>
-        /// The height of the bitmap image.
-        /// </summary>
-        public int Height { get; private set; }
 
         /// <summary>
         /// Access the pixel at the position (x,y).
@@ -43,35 +33,13 @@ namespace WUFF.Image.Bitmap
         /// <param name="width">The horizontal pixel count.</param>
         /// <param name="height">The vertical pixel count.</param>
         /// <param name="pixels">The pixels, i.e. the colours of the image.</param>
-        internal Bitmap(int width, int height, Color[] pixels)
+        internal Bitmap(int width, int height, Color[] pixels) : base(width, height)
         {
-            Width = width;
-            Height = height;
             _pixels = pixels;
         }
 
-        /// <summary>
-        /// Check if the provided coordinate values are within the area of the bitmap.
-        /// </summary>
-        /// <param name="x">The position of the pixel on the horizontal axis.</param>
-        /// <param name="y">The position of the pixel on the vertical axis.</param>
-        private void CheckCoordinates(int x, int y)
+        protected override Color SubGetPixel(int x, int y)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(x, nameof(x));
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(x, Width, nameof(x));
-            ArgumentOutOfRangeException.ThrowIfNegative(y, nameof(y));
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(y, Height, nameof(y));
-        }
-
-        /// <summary>
-        /// Get the pixel at the specified position.
-        /// </summary>
-        /// <param name="x">The horizontal position of the pixel.</param>
-        /// <param name="y">The veritical position of the pixel.</param>
-        /// <returns>The pixel at the specified position.</returns>
-        public Color GetPixel(int x, int y)
-        {
-            CheckCoordinates(x, y);
             return _pixels[y * Width + x];
         }
 
@@ -258,15 +226,8 @@ namespace WUFF.Image.Bitmap
             return pixels;
         }
 
-        /// <summary>
-        /// Set the pixel at the given position.
-        /// </summary>
-        /// <param name="x">The horizontal position of the pixel to set.</param>
-        /// <param name="y">The vertical position of the pixel to set.</param>
-        /// <param name="colour">The colour to set the pixel to.</param>
-        public void SetPixel(int x, int y, Color colour)
+        protected override void SubSetPixel(int x, int y, Color colour)
         {
-            CheckCoordinates(x, y);
             _pixels[y * Width + x] = colour;
         }
 
