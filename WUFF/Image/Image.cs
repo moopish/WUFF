@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-
-namespace WUFF.Image
+﻿namespace WUFF.Image
 {
     /// <summary>
     /// Represents an image.
@@ -25,7 +23,7 @@ namespace WUFF.Image
         /// <param name="x">The horizontal position of the pixel.</param>
         /// <param name="y">The veritical position of the pixel.</param>
         /// <returns>The pixel at the specified position.</returns>
-        protected abstract Color SubGetPixel(int x, int y);
+        protected abstract Colour SubGetPixel(int x, int y);
 
         /// <summary>
         /// Set the pixel at the given position. Internal implimentation of a subclass.
@@ -33,7 +31,7 @@ namespace WUFF.Image
         /// <param name="x">The horizontal position of the pixel to set.</param>
         /// <param name="y">The vertical position of the pixel to set.</param>
         /// <param name="colour">The colour to set the pixel to.</param>
-        protected abstract void SubSetPixel(int x, int y, Color color);
+        protected abstract void SubSetPixel(int x, int y, Colour colour);
 
         /// <summary>
         /// Check if the provided coordinate values are within the area of the bitmap.
@@ -54,7 +52,7 @@ namespace WUFF.Image
         /// <param name="x">The horizontal position of the pixel.</param>
         /// <param name="y">The veritical position of the pixel.</param>
         /// <returns>The pixel at the specified position.</returns>
-        public Color GetPixel(int x, int y)
+        public Colour GetPixel(int x, int y)
         {
             CheckCoordinates(x, y);
             return SubGetPixel(x, y);
@@ -66,10 +64,10 @@ namespace WUFF.Image
         /// <param name="x">The horizontal position of the pixel to set.</param>
         /// <param name="y">The vertical position of the pixel to set.</param>
         /// <param name="colour">The colour to set the pixel to.</param>
-        public void SetPixel(int x, int y, Color color)
+        public void SetPixel(int x, int y, Colour colour)
         {
             CheckCoordinates(x, y);
-            SubSetPixel(x, y, color);
+            SubSetPixel(x, y, colour);
         }
     }
 }

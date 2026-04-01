@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using WUFF.Bytes;
+﻿using WUFF.Bytes;
 using WUFF.Err;
 
 namespace WUFF.Image.Bitmap
@@ -13,7 +12,7 @@ namespace WUFF.Image.Bitmap
         /// The pixels of the bitmap image. Stored top-down, row-by-row.
         /// The first element would be the top-left pixel.
         /// </summary>
-        private readonly Color[] _pixels;
+        private readonly Colour[] _pixels;
 
         /// <summary>
         /// Access the pixel at the position (x,y).
@@ -21,7 +20,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="x">The position of the pixel on the horizontal axis.</param>
         /// <param name="y">The position of the pixel on the vertical axis.</param>
         /// <returns>The pixel at the specified position.</returns>
-        public Color this[int x, int y]
+        public Colour this[int x, int y]
         {
             get => GetPixel(x, y);
             set => SetPixel(x, y, value);
@@ -33,12 +32,12 @@ namespace WUFF.Image.Bitmap
         /// <param name="width">The horizontal pixel count.</param>
         /// <param name="height">The vertical pixel count.</param>
         /// <param name="pixels">The pixels, i.e. the colours of the image.</param>
-        internal Bitmap(int width, int height, Color[] pixels) : base(width, height)
+        internal Bitmap(int width, int height, Colour[] pixels) : base(width, height)
         {
             _pixels = pixels;
         }
 
-        protected override Color SubGetPixel(int x, int y)
+        protected override Colour SubGetPixel(int x, int y)
         {
             return _pixels[y * Width + x];
         }
@@ -76,7 +75,7 @@ namespace WUFF.Image.Bitmap
             if (infoHeader.SizeInBytes != 0)
                 FileParseException.ThrowIfNotEqual((uint)reader.Remaining, infoHeader.SizeInBytes, "Pixel data length mismatch with stated size in header.");
 
-            Color[] pixels = ParseColourData(bytes, infoHeader, palette, offset);
+            Colour[] pixels = ParseColourData(bytes, infoHeader, palette, offset);
 
             return new Bitmap(infoHeader.Width, infoHeader.Height, pixels);
         }
@@ -90,7 +89,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="offset">The offset to where the colour data is.</param>
         /// <returns>The pixel data of the bitmap.</returns>
         /// <exception cref="FileParseException">Thrown should an issue arise when parsing the colour data.</exception>
-        internal static Color[] ParseColourData(byte[] bytes, InfoHeader info, Palette palette, uint offset = 0) => ParseColourData(new(bytes, offset), info, palette);
+        internal static Colour[] ParseColourData(byte[] bytes, InfoHeader info, Palette palette, uint offset = 0) => ParseColourData(new(bytes, offset), info, palette);
 
         /// <summary>
         /// Parse the colour data for a bitmap.
@@ -100,7 +99,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="palette">The bitmap colour header.</param>
         /// <returns>The pixel data of the bitmap.</returns>
         /// <exception cref="FileParseException">Thrown should an issue arise when parsing the colour data.</exception>
-        internal static Color[] ParseColourData(LittleEndianReader reader, InfoHeader info, Palette palette)
+        internal static Colour[] ParseColourData(LittleEndianReader reader, InfoHeader info, Palette palette)
         {
             if (!Enum.IsDefined(info.CompressionUsed)) throw new FileParseException("Invalid compression type found: " + info.CompressionUsed);
 
@@ -128,9 +127,9 @@ namespace WUFF.Image.Bitmap
         /// <param name="info">The header info.</param>
         /// <param name="palette">The palette to pull the colours from.</param>
         /// <returns>The pixels of the image.</returns>
-        private static Color[] ParseWithPalette(LittleEndianReader reader, InfoHeader info, Palette palette)
+        private static Colour[] ParseWithPalette(LittleEndianReader reader, InfoHeader info, Palette palette)
         {
-            Color[] pixels = new Color[info.Size];
+            Colour[] pixels = new Colour[info.Size];
 
             foreach (int y in info.YRange)
             {
@@ -161,9 +160,9 @@ namespace WUFF.Image.Bitmap
         /// <param name="palette">The palette to pull the colours from.</param>
         /// <param name="parser">Used to parse each byte to pull the appropriate indicies from.</param>
         /// <returns>The pixels of the image.</returns>
-        private static Color[] ParseWithPalette(LittleEndianReader reader, InfoHeader info, Palette palette, PaletteIndexParser parser)
+        private static Colour[] ParseWithPalette(LittleEndianReader reader, InfoHeader info, Palette palette, PaletteIndexParser parser)
         {
-            Color[] pixels = new Color[info.Size];
+            Colour[] pixels = new Colour[info.Size];
 
             foreach (int y in info.YRange)
             {
@@ -206,18 +205,18 @@ namespace WUFF.Image.Bitmap
         /// <param name="reader">The reader to parse the bytes from.</param>
         /// <param name="info">The header info.</param>
         /// <returns>The pixels of the image.</returns>
-        private static Color[] ParseTrueColour(LittleEndianReader reader, InfoHeader info)
+        private static Colour[] ParseTrueColour(LittleEndianReader reader, InfoHeader info)
         {
-            Color[] pixels = new Color[info.Size];
+            Colour[] pixels = new Colour[info.Size];
 
             foreach (int y in info.YRange)
             {
                 for (int x = 0; x < info.Width; ++x)
                 {
-                    int blue = reader.Byte();
-                    int green = reader.Byte();
-                    int red = reader.Byte();
-                    pixels[y * info.Width + x] = Color.FromArgb(255, red, green, blue);
+                    byte blue = reader.Byte();
+                    byte green = reader.Byte();
+                    byte red = reader.Byte();
+                    pixels[y * info.Width + x] = Colour.FromRGB(red, green, blue);
                 }
 
                 for (int i = 0; i < info.Width % 4; ++i) reader.Byte();
@@ -226,7 +225,7 @@ namespace WUFF.Image.Bitmap
             return pixels;
         }
 
-        protected override void SubSetPixel(int x, int y, Color colour)
+        protected override void SubSetPixel(int x, int y, Colour colour)
         {
             _pixels[y * Width + x] = colour;
         }

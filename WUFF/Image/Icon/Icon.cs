@@ -117,12 +117,12 @@ namespace WUFF.Image.Icon
                 InfoHeader maskInfo = info.IconMaskVariant();
 
                 reader = new LittleEndianReader(bytes, offset);
-                Color[] pixels = Bitmap.Bitmap.ParseColourData(reader, info, palette);
-                Color[] mask = Bitmap.Bitmap.ParseColourData(reader, maskInfo, Palette.BlackAndWhitePalette);
+                Colour[] pixels = Bitmap.Bitmap.ParseColourData(reader, info, palette);
+                Colour[] mask = Bitmap.Bitmap.ParseColourData(reader, maskInfo, Palette.BlackAndWhitePalette);
 
                 for (int j = 0; j < pixels.Length; ++j)
                 {
-                    if (mask[j] == Palette.BlackAndWhitePalette[1]) pixels[j] = Color.Transparent;
+                    if (mask[j] == Palette.BlackAndWhitePalette[1]) pixels[j] = Colour.Transparent;
                 }
 
                 images[i] = new Bitmap.Bitmap(info.Width, info.Height, pixels);

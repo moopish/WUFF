@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using WUFF.Bytes;
+﻿using WUFF.Bytes;
 
 namespace WUFF.Image.Bitmap
 {
@@ -12,7 +11,7 @@ namespace WUFF.Image.Bitmap
         /// <summary>
         /// A black and white palette.
         /// </summary>
-        public static readonly Palette BlackAndWhitePalette = new([Color.Black, Color.White]);
+        public static readonly Palette BlackAndWhitePalette = new([Colour.Black, Colour.White]);
 
         /// <summary>
         /// An empty palette. Contains no colours.
@@ -22,7 +21,7 @@ namespace WUFF.Image.Bitmap
         /// <summary>
         /// The colours stored in this palette.
         /// </summary>
-        private readonly Color[] _colours;
+        private readonly Colour[] _colours;
 
         /// <summary>
         /// The number of colours in the palette.
@@ -33,7 +32,7 @@ namespace WUFF.Image.Bitmap
         /// Creates a palette given the array of colours.
         /// </summary>
         /// <param name="colours">The colours that the palette will contain.</param>
-        private Palette(Color[] colours)
+        private Palette(Colour[] colours)
         {
             _colours = colours;
         }
@@ -44,7 +43,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="index">The index to get the colour from.</param>
         /// <returns>The colour at the specified index.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Throws if the provided index is negative or larger than the max index.</exception>
-        public Color this[int index]
+        public Colour this[int index]
         {
             get {
                 ArgumentOutOfRangeException.ThrowIfNegative(index, "Palette index must be positive.");
@@ -77,7 +76,7 @@ namespace WUFF.Image.Bitmap
             // No palette used.
             if (colourCount == 0) return EmptyPalette;
 
-            Color[] colours = new Color[colourCount];
+            Colour[] colours = new Colour[colourCount];
 
             LittleEndianReader reader = new(bytes, offset);
 
@@ -92,7 +91,7 @@ namespace WUFF.Image.Bitmap
                     reader.Byte(); // Ignore alpha/reserved byte for getting the colour.
                 }
 
-                colours[colour] = Color.FromArgb(red, green, blue);
+                colours[colour] = Colour.FromRGB(red, green, blue);
             }
 
             return new(colours);

@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using WUFF.Bytes;
+﻿using WUFF.Bytes;
 using WUFF.Err;
 
 namespace WUFF.Image.Bitmap
@@ -71,12 +70,12 @@ namespace WUFF.Image.Bitmap
         /// <param name="reader">The reader to read the bytes from.</param>
         /// <param name="info">The info header to get the masks and other bitmap details from.</param>
         /// <returns>The parsed pixels.</returns>
-        internal static Color[] ParseBitMask(LittleEndianReader reader, InfoHeader info)
+        internal static Colour[] ParseBitMask(LittleEndianReader reader, InfoHeader info)
         {
             if (info.Depth != ColourDepth.TrueColourWithAlpha && info.Depth != ColourDepth.HighColour)
                 throw new FileParseException("Attempting to parse pixels with bit masks when unsupported for bitmap's colour depth.");
 
-            Color[] pixels = new Color[info.Size];
+            Colour[] pixels = new Colour[info.Size];
             BitMaskParser parser = new(info.Masks);
 
             foreach (int y in info.YRange)
@@ -103,11 +102,11 @@ namespace WUFF.Image.Bitmap
         /// <param name="parser">The parser used to decode the bitmap.</param>
         /// <returns>The pixels of the decoded image.</returns>
         /// <exception cref="FileParseException">Thrown when issues arrise with trying to write outside of bitmap bounds or a negative height is provided.</exception>
-        private static Color[] RLEDecode(LittleEndianReader reader, InfoHeader info, Palette palette, RLEParser parser)
+        private static Colour[] RLEDecode(LittleEndianReader reader, InfoHeader info, Palette palette, RLEParser parser)
         {
             if (info.IsMirroredVertically) throw new FileParseException("RLE compression does not allow top-down (negative height).");
 
-            Color[] pixels = new Color[info.Size];
+            Colour[] pixels = new Colour[info.Size];
 
             int x = 0;
             int y = info.Height - 1;
@@ -181,7 +180,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="palette">The palette of the bitmap.</param>
         /// <returns>The pixels of the decoded image.</returns>
         /// <exception cref="FileParseException">Thrown when issues arrise with trying to write outside of bitmap bounds or a negative height is provided.</exception>
-        internal static Color[] RLE4Decode(LittleEndianReader reader, InfoHeader info, Palette palette) => RLEDecode(reader, info, palette, new RLE4Parser());
+        internal static Colour[] RLE4Decode(LittleEndianReader reader, InfoHeader info, Palette palette) => RLEDecode(reader, info, palette, new RLE4Parser());
 
         /// <summary>
         /// Decode RLE-8 pixel data.
@@ -191,7 +190,7 @@ namespace WUFF.Image.Bitmap
         /// <param name="palette">The palette of the bitmap.</param>
         /// <returns>The pixels of the decoded image.</returns>
         /// <exception cref="FileParseException">Thrown when issues arrise with trying to write outside of bitmap bounds or a negative height is provided.</exception>
-        internal static Color[] RLE8Decode(LittleEndianReader reader, InfoHeader info, Palette palette) => RLEDecode(reader, info, palette, new RLE8Parser());
+        internal static Colour[] RLE8Decode(LittleEndianReader reader, InfoHeader info, Palette palette) => RLEDecode(reader, info, palette, new RLE8Parser());
 
         /// <summary>
         /// Parser to retrieve the ARGB values using bit masks.
@@ -210,7 +209,7 @@ namespace WUFF.Image.Bitmap
             /// </summary>
             /// <param name="value">The value to get the colour from.</param>
             /// <returns>The colour from the value.</returns>
-            internal Color Parse(uint value)
+            internal Colour Parse(uint value)
             {
                 uint alpha = 0;
                 uint red = 0;
@@ -247,7 +246,7 @@ namespace WUFF.Image.Bitmap
                 blue = ClampChannel(_masks.MaxBlue, blue);
 
                 if (_masks.MaxAlpha == 0) alpha = 255; // Assume no bitmask means no alpha.
-                return Color.FromArgb((int)alpha, (int)red, (int)green, (int)blue);
+                return Colour.FromARGB((byte)alpha, (byte)red, (byte)green, (byte)blue);
             }
 
             /// <summary>
