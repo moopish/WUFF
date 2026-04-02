@@ -1,6 +1,6 @@
 ﻿using WUFF.Err;
 
-namespace WUFF.Image
+namespace WUFF.Image.Colours
 {
     /// <summary>
     /// Represents the collection of bit masks to retrieve a colour.
@@ -77,25 +77,25 @@ namespace WUFF.Image
             {
                 int count = 0;
 
-                if (((RedMask >> i) & 0x01) == 1)
+                if ((RedMask >> i & 0x01) == 1)
                 {
                     maxRed = (maxRed << 1) + 1;
                     ++count;
                 }
 
-                if (((GreenMask >> i) & 0x01) == 1)
+                if ((GreenMask >> i & 0x01) == 1)
                 {
                     maxGreen = (maxGreen << 1) + 1;
                     ++count;
                 }
 
-                if (((BlueMask >> i) & 0x01) == 1)
+                if ((BlueMask >> i & 0x01) == 1)
                 {
                     maxBlue = (maxBlue << 1) + 1;
                     ++count;
                 }
 
-                if (((AlphaMask >> i) & 0x01) == 1)
+                if ((AlphaMask >> i & 0x01) == 1)
                 {
                     maxAlpha = (maxAlpha << 1) + 1;
                     ++count;
@@ -114,10 +114,10 @@ namespace WUFF.Image
         /// <returns>The channel that claims the given bit.</returns>
         public ColourChannel GetChannel(int bit)
         {
-            if (((AlphaMask >> bit) & 1) == 1) return ColourChannel.Alpha;
-            if (((RedMask >> bit) & 1) == 1) return ColourChannel.Red;
-            if (((GreenMask >> bit) & 1) == 1) return ColourChannel.Green;
-            if (((BlueMask >> bit) & 1) == 1) return ColourChannel.Blue;
+            if ((AlphaMask >> bit & 1) == 1) return ColourChannel.Alpha;
+            if ((RedMask >> bit & 1) == 1) return ColourChannel.Red;
+            if ((GreenMask >> bit & 1) == 1) return ColourChannel.Green;
+            if ((BlueMask >> bit & 1) == 1) return ColourChannel.Blue;
             return ColourChannel.None;
         }
 
@@ -136,24 +136,24 @@ namespace WUFF.Image
 
             for (int bit = (int)Depth - 1; bit >= 0; --bit)
             {
-                uint bValue = (value >> bit) & 1;
+                uint bValue = value >> bit & 1;
 
                 switch (GetChannel(bit))
                 {
                     case ColourChannel.Alpha:
-                        alpha = (alpha << 1) | bValue;
+                        alpha = alpha << 1 | bValue;
                         break;
 
                     case ColourChannel.Red:
-                        red = (red << 1) | bValue;
+                        red = red << 1 | bValue;
                         break;
 
                     case ColourChannel.Green:
-                        green = (green << 1) | bValue;
+                        green = green << 1 | bValue;
                         break;
 
                     case ColourChannel.Blue:
-                        blue = (blue << 1) | bValue;
+                        blue = blue << 1 | bValue;
                         break;
                 }
             }

@@ -1,4 +1,4 @@
-﻿namespace WUFF.Image
+﻿namespace WUFF.Image.Colours
 {
     /// <summary>
     /// Possible colour depths. The number of bits per pixel (bpp). 

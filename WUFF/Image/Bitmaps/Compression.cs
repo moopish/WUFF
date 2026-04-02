@@ -1,7 +1,8 @@
 ﻿using WUFF.Bytes;
 using WUFF.Err;
+using WUFF.Image.Colours;
 
-namespace WUFF.Image.Bitmap
+namespace WUFF.Image.Bitmaps
 {
     /// <summary>
     /// Used for compression related to <see cref="Bitmap"/>.

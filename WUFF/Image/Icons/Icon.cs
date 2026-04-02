@@ -1,8 +1,9 @@
 ﻿using WUFF.Err;
 using WUFF.Bytes;
-using WUFF.Image.Bitmap;
+using WUFF.Image.Bitmaps;
+using WUFF.Image.Colours;
 
-namespace WUFF.Image.Icon
+namespace WUFF.Image.Icons
 {
     /// <summary>
     /// Represents an Icon or Cursor.
@@ -26,7 +27,7 @@ namespace WUFF.Image.Icon
         /// <summary>
         /// The images stored in the file.
         /// </summary>
-        private Bitmap.Bitmap[] _images;
+        private Bitmap[] _images;
 
         /// <summary>
         /// The number of images in icon/cursor.
@@ -38,7 +39,7 @@ namespace WUFF.Image.Icon
         /// </summary>
         /// <param name="index">The index of the image to retrieve.</param>
         /// <returns>The image at the index given.</returns>
-        public Bitmap.Bitmap this[int index]
+        public Bitmap this[int index]
         {
             get => _images[index];
         }
@@ -48,7 +49,7 @@ namespace WUFF.Image.Icon
         /// </summary>
         /// <param name="header">The file header.</param>
         /// <param name="images">The images from the file in an array.</param>
-        private Icon(Header header, Bitmap.Bitmap[] images)
+        private Icon(Header header, Bitmap[] images)
         {
             _header = header;
             _images = images;
@@ -100,7 +101,7 @@ namespace WUFF.Image.Icon
                 if (entries[i].Reserved != 0) throw new FileParseException("Reserved in directory entry was found not to be zero.");
             }
 
-            Bitmap.Bitmap[] images = new Bitmap.Bitmap[header.Count];
+            Bitmap[] images = new Bitmap[header.Count];
 
             for (int i = 0; i < entries.Length; ++i)
             {
@@ -116,15 +117,15 @@ namespace WUFF.Image.Icon
                 InfoHeader maskInfo = info.IconMaskVariant();
 
                 reader = new LittleEndianReader(bytes, offset);
-                Colour[] pixels = Bitmap.Bitmap.ParseColourData(reader, info, palette);
-                Colour[] mask = Bitmap.Bitmap.ParseColourData(reader, maskInfo, Palette.BlackAndWhitePalette);
+                Colour[] pixels = Bitmap.ParseColourData(reader, info, palette);
+                Colour[] mask = Bitmap.ParseColourData(reader, maskInfo, Palette.BlackAndWhitePalette);
 
                 for (int j = 0; j < pixels.Length; ++j)
                 {
                     if (mask[j] == Palette.BlackAndWhitePalette[1]) pixels[j] = Colour.Transparent;
                 }
 
-                images[i] = new Bitmap.Bitmap(info.Width, info.Height, pixels);
+                images[i] = new Bitmap(info.Width, info.Height, pixels);
             }
 
             return new Icon(header, images);

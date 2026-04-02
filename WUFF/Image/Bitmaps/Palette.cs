@@ -1,6 +1,7 @@
 ﻿using WUFF.Bytes;
+using WUFF.Image.Colours;
 
-namespace WUFF.Image.Bitmap
+namespace WUFF.Image.Bitmaps
 {
     /// <summary>
     /// Represents a palette that a <see cref="Bitmap"/> uses to match

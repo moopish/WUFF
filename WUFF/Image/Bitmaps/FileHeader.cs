@@ -1,7 +1,7 @@
 ﻿using WUFF.Err;
 using WUFF.Bytes;
 
-namespace WUFF.Image.Bitmap
+namespace WUFF.Image.Bitmaps
 {
     /// <summary>
     /// Respresents the initial bytes of a bitmap file. Provides 
