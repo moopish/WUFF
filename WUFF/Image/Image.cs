@@ -55,7 +55,7 @@
         public Colour GetPixel(int x, int y)
         {
             CheckCoordinates(x, y);
-            return SubGetPixel(x, y);
+            return SubGetPixel(x, y) ?? Colour.Transparent;
         }
 
         /// <summary>

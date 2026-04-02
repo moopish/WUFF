@@ -140,14 +140,14 @@ namespace WUFF.Image.Bitmap
         /// <summary>
         /// The bit masks for all the channels. Will only contain non-zero values if 16 or 32 bit bitmaps.
         /// </summary>
-        internal Compression.BitMaskSet Masks
+        internal ColourMaskSet Masks
         {
             get
             {
                 if (CompressionUsed != Compression.Type.BitMasks)
                 {
-                    if (Depth == ColourDepth.HighColour) return Compression.BitMaskSet.Default16Bit;
-                    if (Depth == ColourDepth.TrueColourWithAlpha) return Compression.BitMaskSet.Default32Bit;
+                    if (Depth == ColourDepth.HighColour) return ColourMaskSet.Default16Bit;
+                    if (Depth == ColourDepth.TrueColourWithAlpha) return ColourMaskSet.Default32Bit;
                 }
                 return new(_alpha_mask, _red_mask, _green_mask, _blue_mask, _bitsPerPixel);
             }
@@ -180,6 +180,11 @@ namespace WUFF.Image.Bitmap
         /// <returns>The y range.</returns>
         internal IEnumerable<int> YRange => IsMirroredVertically ? Enumerable.Range(0, Height) : Enumerable.Range(0, Height).Reverse();
 
+        /// <summary>
+        /// Get a version of the information header that halves the height.
+        /// Used for icons as they provide the height for both the image and the mask.
+        /// </summary>
+        /// <returns>A version of the information header that halves the height.</returns>
         internal InfoHeader IconHalfHeightVariant()
         {
             InfoHeader halfHeight = new(_type)
@@ -203,6 +208,11 @@ namespace WUFF.Image.Bitmap
             return halfHeight;
         }
 
+        /// <summary>
+        /// Gets a version of the information that is for a monochromatic image.
+        /// This is for the mask.
+        /// </summary>
+        /// <returns>A version of the information that is for a monochromatic image.</returns>
         internal InfoHeader IconMaskVariant()
         {
             InfoHeader mono = new(_type)

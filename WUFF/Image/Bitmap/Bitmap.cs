@@ -81,6 +81,34 @@ namespace WUFF.Image.Bitmap
         }
 
         /// <summary>
+        /// Parse the pixel data based on bit masks.
+        /// </summary>
+        /// <param name="reader">The reader to read the bytes from.</param>
+        /// <param name="info">The info header to get the masks and other bitmap details from.</param>
+        /// <returns>The parsed pixels.</returns>
+        private static Colour[] ParseBitMask(LittleEndianReader reader, InfoHeader info)
+        {
+            if (info.Depth != ColourDepth.TrueColourWithAlpha && info.Depth != ColourDepth.HighColour)
+                throw new FileParseException("Attempting to parse pixels with bit masks when unsupported for bitmap's colour depth.");
+
+            Colour[] pixels = new Colour[info.Size];
+            ColourMaskSet parser = info.Masks;
+
+            foreach (int y in info.YRange)
+            {
+                for (int x = 0; x < info.Width; ++x)
+                {
+                    uint value = info.Depth == ColourDepth.HighColour ? reader.UShort() : reader.UInt();
+                    pixels[y * info.Width + x] = parser.Parse(value);
+                }
+
+                if (info.Depth == ColourDepth.HighColour && (info.Width & 1) == 1) reader.UShort();
+            }
+
+            return pixels;
+        }
+
+        /// <summary>
         /// Parse the colour data for a bitmap.
         /// </summary>
         /// <param name="bytes">The bitmap data.</param>
@@ -113,11 +141,37 @@ namespace WUFF.Image.Bitmap
                 ColourDepth.CGA => ParseWithPalette(reader, info, palette, new CGAParser()),
                 ColourDepth.EGA => info.CompressionUsed == Compression.Type.RLE4 ? Compression.RLE4Decode(reader, info, palette) : ParseWithPalette(reader, info, palette, new EGAParser()),
                 ColourDepth.VGA => info.CompressionUsed == Compression.Type.RLE8 ? Compression.RLE8Decode(reader, info, palette) : ParseWithPalette(reader, info, palette),
-                ColourDepth.HighColour => Compression.ParseBitMask(reader, info),
+                ColourDepth.HighColour => ParseBitMask(reader, info),
                 ColourDepth.TrueColour => ParseTrueColour(reader, info),
-                ColourDepth.TrueColourWithAlpha => Compression.ParseBitMask(reader, info),
+                ColourDepth.TrueColourWithAlpha => ParseBitMask(reader, info),
                 _ => throw new FileParseException("Invalid colour depth: " + info.Depth),
             };
+        }
+
+        /// <summary>
+        /// Parse 24-bit per pixel bitmap.
+        /// </summary>
+        /// <param name="reader">The reader to parse the bytes from.</param>
+        /// <param name="info">The header info.</param>
+        /// <returns>The pixels of the image.</returns>
+        private static Colour[] ParseTrueColour(LittleEndianReader reader, InfoHeader info)
+        {
+            Colour[] pixels = new Colour[info.Size];
+
+            foreach (int y in info.YRange)
+            {
+                for (int x = 0; x < info.Width; ++x)
+                {
+                    byte blue = reader.Byte();
+                    byte green = reader.Byte();
+                    byte red = reader.Byte();
+                    pixels[y * info.Width + x] = Colour.FromRGB(red, green, blue);
+                }
+
+                for (int i = 0; i < info.Width % 4; ++i) reader.Byte();
+            }
+
+            return pixels;
         }
 
         /// <summary>
@@ -194,32 +248,6 @@ namespace WUFF.Image.Bitmap
                     reader.Byte();
                     offset32 = (offset32 + 8) % 32;
                 }
-            }
-
-            return pixels;
-        }
-
-        /// <summary>
-        /// Parse 24-bit per pixel bitmap.
-        /// </summary>
-        /// <param name="reader">The reader to parse the bytes from.</param>
-        /// <param name="info">The header info.</param>
-        /// <returns>The pixels of the image.</returns>
-        private static Colour[] ParseTrueColour(LittleEndianReader reader, InfoHeader info)
-        {
-            Colour[] pixels = new Colour[info.Size];
-
-            foreach (int y in info.YRange)
-            {
-                for (int x = 0; x < info.Width; ++x)
-                {
-                    byte blue = reader.Byte();
-                    byte green = reader.Byte();
-                    byte red = reader.Byte();
-                    pixels[y * info.Width + x] = Colour.FromRGB(red, green, blue);
-                }
-
-                for (int i = 0; i < info.Width % 4; ++i) reader.Byte();
             }
 
             return pixels;
@@ -337,7 +365,7 @@ namespace WUFF.Image.Bitmap
         }
 
         /// <summary>
-        /// 'EGA' (4-bit) parser. Reads a nibb;e (4-bits) at a time.
+        /// 'EGA' (4-bit) parser. Reads a nibble (4-bits) at a time.
         /// </summary>
         private sealed class EGAParser : PaletteIndexParser
         {

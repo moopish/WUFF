@@ -1,6 +1,5 @@
 ﻿using WUFF.Err;
 using WUFF.Bytes;
-using System.Drawing;
 using WUFF.Image.Bitmap;
 
 namespace WUFF.Image.Icon
