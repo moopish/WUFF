@@ -1,8 +1,8 @@
 ﻿using WUFF.Bytes;
 using WUFF.Err;
-using WUFF.Image.Colours;
+using WUFF.Images.Colours;
 
-namespace WUFF.Image.Bitmaps
+namespace WUFF.Images.Bitmaps
 {
     /// <summary>
     /// Represents a bitmap image.

@@ -1,6 +1,6 @@
-﻿using WUFF.Image.Colours;
+﻿using WUFF.Images.Colours;
 
-namespace WUFF.Image
+namespace WUFF.Images
 {
     /// <summary>
     /// Represents an image.

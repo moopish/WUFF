@@ -1,4 +1,4 @@
-﻿namespace WUFF.Image.Colours
+﻿namespace WUFF.Images.Colours
 {
     /// <summary>
     /// Represents a specific colour channel, or none.

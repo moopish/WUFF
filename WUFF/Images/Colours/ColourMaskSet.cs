@@ -1,6 +1,6 @@
 ﻿using WUFF.Err;
 
-namespace WUFF.Image.Colours
+namespace WUFF.Images.Colours
 {
     /// <summary>
     /// Represents the collection of bit masks to retrieve a colour.

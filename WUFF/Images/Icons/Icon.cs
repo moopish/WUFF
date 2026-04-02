@@ -1,9 +1,9 @@
 ﻿using WUFF.Err;
 using WUFF.Bytes;
-using WUFF.Image.Bitmaps;
-using WUFF.Image.Colours;
+using WUFF.Images.Bitmaps;
+using WUFF.Images.Colours;
 
-namespace WUFF.Image.Icons
+namespace WUFF.Images.Icons
 {
     /// <summary>
     /// Represents an Icon or Cursor.

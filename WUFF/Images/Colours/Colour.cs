@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using WUFF.Helpers;
 
-namespace WUFF.Image.Colours
+namespace WUFF.Images.Colours
 {
     /// <summary>
     /// Represents a colour.
